@@ -73,7 +73,12 @@ class MidiTrack(object):
             self.set_instrument(channel, self.instrument)
             self.change_instrument = False
         print("*"*80,int(note))
-        self.track_data += self.note_on(channel, int(note) + 12, velocity)
+        print('midi_track::play_Note channel note velocity',channel,note,velocity)
+        print('midi_track::play_Note',self.track_data,len(self.track_data))
+        res = self.note_on(channel, int(note) + 12, velocity)
+        print('midi_track::play_Note',self.track_data,len(self.track_data))
+        print('>>>>midi_track::play_Note res=',res)
+        self.track_data += res
         
 
     def play_NoteContainer(self, notecontainer):
@@ -97,8 +102,15 @@ class MidiTrack(object):
         self.set_meter(bar.meter)
         self.set_deltatime(0)
         self.set_key(bar.key)
+
+        print('B'*80)
+        print('midi_track::play_Bar')
+        print('midi_track::play_Bar',self.track_data,len(self.track_data))
+        
         for x in bar:
             tick = int(round((1.0 / x[1]) * 288))
+            print("tick:",tick)
+            print("x[2]:",x[2])
             if x[2] is None or len(x[2]) == 0:
                 self.delay += tick
             else:
@@ -107,9 +119,17 @@ class MidiTrack(object):
                 if hasattr(x[2], 'bpm'):
                     self.set_deltatime(0)
                     self.set_tempo(x[2].bpm)
+                    print("x[2].bpm",x[2].bpm)
+                print('midi_track::play_Bar',self.track_data,len(self.track_data))
                 self.play_NoteContainer(x[2])
-                self.set_deltatime(self.int_to_varbyte(tick))
+                print('midi_track::play_Bar',self.track_data,len(self.track_data))
+                r = self.int_to_varbyte(tick)
+                print("int_to_varbyte",r)
+                self.set_deltatime(r)
+                print('midi_track::play_Bar',self.track_data,len(self.track_data))
                 self.stop_NoteContainer(x[2])
+                
+        print('B'*80)
 
     def play_Track(self, track):
         """Convert a Track object to MIDI events and write them to the
@@ -123,6 +143,10 @@ class MidiTrack(object):
             self.instrument = instr.instrument_nr
         for bar in track:
             self.play_Bar(bar)
+        print('~'*80)
+        print('midi_track::play_Track')
+        print("self",self.track_data)
+        print('~'*80)
 
     def stop_Note(self, note):
         """Add a note_off event for note to event_track."""
@@ -137,13 +161,20 @@ class MidiTrack(object):
             channel = note.channel
         if hasattr(note, 'velocity'):
             velocity = note.velocity
-        self.track_data += self.note_off(channel, int(note) + 12, velocity)
+        print('midi_track::stop_Note velocity channel',velocity,channel)
+        note_off_res = self.note_off(channel, int(note) + 12, velocity)
+        print('midi_track::stop_Note note_off_res',note_off_res)
+        print('stop_Note::play_Track',self.track_data,len(self.track_data))
+        self.track_data += note_off_res
+        print('stop_Note::play_Track',self.track_data,len(self.track_data))
 
     def stop_NoteContainer(self, notecontainer):
         """Add note_off events for each note in the NoteContainer to the
         track_data."""
         # if there is more than one note in the container, the deltatime should
         # be set back to zero after the first one has been stopped
+
+        print("stop_NoteContainer::notecontainer",notecontainer,len(notecontainer))
         if len(notecontainer) <= 1:
             [self.stop_Note(x) for x in notecontainer]
         else:
@@ -207,15 +238,17 @@ class MidiTrack(object):
         else:
             #SOLO: params = a2b_hex('%02x%02x' % (param1, param2))
             params = bytes.fromhex('%02x%02x' % (param1, param2))
-        #print("-------------",type(self.delta_time),type(tc),type(params)) 
+        print("-------------",self.delta_time,tc,params) 
 
         my_delta_time=b''
         if type(self.delta_time).__name__ == 'str':
              my_delta_time = self.delta_time.encode()
         else:
             my_delta_time = self.delta_time
-
-        return my_delta_time + tc + params
+        
+        res = my_delta_time + tc + params
+        print("midi_event res:",res)
+        return res
 
     def note_off(self, channel, note, velocity):
         """Return bytes for a 'note off' event."""
@@ -314,14 +347,19 @@ class MidiTrack(object):
             mode = b'\x00'
         if val < 0:
             val = 256 + val
+
+        print('key_signature_event val',val)
         
         #SOLO:
         #key = a2b_hex('%02x' % val)
         #return '{0}{1}{2}\x02{3}{4}'.format(self.delta_time, META_EVENT,
         #        KEY_SIGNATURE, key, mode)
         key = bytes.fromhex('%02x' % val)
-        return self.delta_time + META_EVENT + KEY_SIGNATURE \
+        print('key_signature_event key',key)
+        res = self.delta_time + META_EVENT + KEY_SIGNATURE + b'\x02' \
                 + key + mode
+        print('key_signature_event res',res)
+        return res
 
     def set_track_name(self, name):
         """Add a meta event for the track."""

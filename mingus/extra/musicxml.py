@@ -319,7 +319,7 @@ def write_Composition(composition, filename, zip=False):
                     "<container><rootfiles><rootfile full-path='{0}.xml'/>"
                     "</rootfiles></container>".format(filename))
         zi = zipfile.ZipInfo(filename + '.xml')
-        zi.external_attr = 0660 << 16L
+        zi.external_attr = 0o660 << 16
         zf.writestr(zi, text)
         zf.close()
 

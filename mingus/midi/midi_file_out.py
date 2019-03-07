@@ -42,7 +42,7 @@ class MidiFile(object):
         print("-"*80)
         print("get_midi_data")
         print(self.header(), len(self.header()))
-        print(tracks,len(tracks))
+        print(tracks,len(tracks[0]))
         print("-"*80)
         
         return self.header() + b''.join(tracks)
@@ -63,6 +63,7 @@ class MidiFile(object):
 
     def write_file(self, file, verbose=False):
         """Collect the data from get_midi_data and write to file."""
+        
         dat = self.get_midi_data()
         try:
             f = open(file, 'wb')
@@ -71,6 +72,7 @@ class MidiFile(object):
             return False
         try:
             f.write(dat)
+            print("0000000000000000000000000000000")
         except:
             print('An error occured while writing data to %s.' % file)
             return False
@@ -90,9 +92,9 @@ def write_Note(file, note, bpm=120, repeat=0, verbose=False):
     t = MidiTrack(bpm)
     m.tracks = [t]
     while repeat >= 0:
-        t.set_deltatime('\x00')
+        t.set_deltatime(b'\x00')
         t.play_Note(note)
-        t.set_deltatime("\x48")
+        t.set_deltatime(b"\x48")
         t.stop_Note(note)
         repeat -= 1
     return m.write_file(file, verbose)
@@ -146,6 +148,12 @@ def write_Composition(file, composition, bpm=120, repeat=0, verbose=False):
     for x in range(len(composition.tracks)):
         t += [MidiTrack(bpm)]
     m.tracks = t
+    print('~'*80)
+    print('midi_file_out::write_Composition')
+    print("repeat",repeat)
+    print("len(composition.tracks)",len(composition.tracks))
+    print("len(composition.tracks)",len(composition.tracks))
+    print('~'*80)
     while repeat >= 0:
         for i in range(len(composition.tracks)):
             m.tracks[i].play_Track(composition.tracks[i])

@@ -361,6 +361,11 @@ class MidiFile:
             result.append(events)
             tracks -= 1
         f.close()
+        print("+"*80)
+        print("parse_midi_file::parse_midi_file")
+        print(header, len(header))
+        print(result,len(result))
+        print("+"*80)
         return (header, result)
 
     def parse_varbyte_as_int(self, fp, return_bytes_read=True):
