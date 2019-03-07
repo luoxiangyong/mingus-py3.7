@@ -20,7 +20,7 @@
 """Functions that can generate MIDI files from the objects in
 mingus.containers."""
 
-from midi_track import MidiTrack
+from .midi_track import MidiTrack
 from binascii import a2b_hex
 
 class MidiFile(object):
@@ -36,14 +36,26 @@ class MidiFile(object):
 
     def get_midi_data(self):
         """Collect and return the raw, binary MIDI data from the tracks."""
-        tracks = [t.get_midi_data() for t in self.tracks if t.track_data != '']
-        return self.header() + ''.join(tracks)
+        
+        print(self.tracks,len(self.tracks))
+        tracks = [t.get_midi_data() for t in self.tracks if t.track_data != b'']
+        print("-"*80)
+        print("get_midi_data")
+        print(self.header(), len(self.header()))
+        print(tracks,len(tracks))
+        print("-"*80)
+        
+        return self.header() + b''.join(tracks)
 
     def header(self):
         """Return a header for type 1 MIDI file."""
-        tracks = a2b_hex('%04x' % len([t for t in self.tracks if
-            t.track_data != '']))
-        return 'MThd\x00\x00\x00\x06\x00\x01' + tracks + self.time_division
+
+        #SOLO:
+        #tracks = a2b_hex('%04x' % len([t for t in self.tracks if
+        #    t.track_data != '']))
+        tracks = bytes.fromhex('%04x' % len([t for t in self.tracks if
+            t.track_data != b'']))
+        return b'MThd\x00\x00\x00\x06\x00\x01' + tracks + self.time_division.encode()
 
     def reset(self):
         """Reset every track."""
@@ -55,16 +67,16 @@ class MidiFile(object):
         try:
             f = open(file, 'wb')
         except:
-            print "Couldn't open '%s' for writing." % file
+            print("Couldn't open '%s' for writing." % file)
             return False
         try:
             f.write(dat)
         except:
-            print 'An error occured while writing data to %s.' % file
+            print('An error occured while writing data to %s.' % file)
             return False
         f.close()
         if verbose:
-            print 'Written %d bytes to %s.' % (len(dat), file)
+            print('Written %d bytes to %s.' % (len(dat), file))
         return True
 
 
@@ -91,9 +103,9 @@ def write_NoteContainer(file, notecontainer, bpm=120, repeat=0, verbose=False):
     t = MidiTrack(bpm)
     m.tracks = [t]
     while repeat >= 0:
-        t.set_deltatime('\x00')
+        t.set_deltatime(b'\x00')
         t.play_NoteContainer(notecontainer)
-        t.set_deltatime("\x48")
+        t.set_deltatime(b"\x48")
         t.stop_NoteContainer(notecontainer)
         repeat -= 1
     return m.write_file(file, verbose)

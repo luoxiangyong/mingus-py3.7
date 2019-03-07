@@ -1,5 +1,5 @@
 从mingus 0.5.2中导入代码，主要修改文件如下：
-        修改：     mingus/containers/__init__.py
+         修改：     mingus/containers/__init__.py
         修改：     mingus/containers/bar.py
         修改：     mingus/containers/composition.py
         修改：     mingus/containers/instrument.py
@@ -15,6 +15,7 @@
         修改：     mingus/core/scales.py
         修改：     mingus/extra/__init__.py
         修改：     mingus/extra/lilypond.py
+        修改：     mingus/extra/musicxml.py
         修改：     mingus/extra/tunings.py
         修改：     mingus/midi/__init__.py
         修改：     mingus/midi/fluidsynth.py
@@ -25,6 +26,7 @@
         修改：     mingus/midi/pyfluidsynth.py
         修改：     mingus/midi/win32midi.py
 
+
 修改的地方包括：
 1、包的导入方法
 2、byte的字面量表示方法
@@ -33,3 +35,5 @@
 5、midi文件的读写
 6、异常的语法
 7、print函数的语法
+8、八进制数的表示方法
+9、

@@ -22,7 +22,6 @@
 This allows you to create sheet music from some of the objects in
 mingus.containers.
 """
-from mingus.containers import Note
 
 from mingus.core.keys import Key
 from mingus.containers.mt_exceptions import (NoteFormatError,
@@ -127,8 +126,7 @@ def from_Bar(bar, showkey=True, showtime=True):
 
     # Process the key
     if showkey:
-        key_note = Note(bar.key.key[0].upper() + bar.key.key[1:])
-        key = '\\key %s \\%s ' % (from_Note(key_note, False, standalone=False), bar.key.mode)
+        key = '\\key %s \\major ' % from_Note(bar.key, False, standalone=False)
         result = key
     else:
         result = ''
@@ -214,7 +212,7 @@ def to_pdf(ly_string, filename):
 def save_string_and_execute_LilyPond(ly_string, filename, command):
     """A helper function for to_png and to_pdf. Should not be used directly."""
     ly_string = '\\version "2.10.33"\n' + ly_string
-    if filename[-4:] in ['.pdf', '.png']:
+    if filename[-4] in ['.pdf' or '.png']:
         filename = filename[:-4]
     try:
         f = open(filename + '.ly', 'w')
@@ -223,7 +221,8 @@ def save_string_and_execute_LilyPond(ly_string, filename, command):
     except:
         return False
     command = 'lilypond %s -o "%s" "%s.ly"' % (command, filename, filename)
-    print 'Executing: %s' % command
+    print('Executing: %s' % command)
     p = subprocess.Popen(command, shell=True).wait()
     os.remove(filename + '.ly')
     return True
+

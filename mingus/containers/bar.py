@@ -19,9 +19,9 @@
 
 from mingus.core import meter as _meter
 from mingus.core import progressions, keys
-from note_container import NoteContainer
-from note import Note
-from mt_exceptions import MeterFormatError
+from .note_container import NoteContainer
+from .note import Note
+from .mt_exceptions import MeterFormatError
 
 class Bar(object):
     """A bar object.
@@ -126,9 +126,12 @@ class Bar(object):
             return False
         if len(self.bar) == 0:
             return False
-        if self.current_beat >= self.length - 0.001:
+        if self.current_beat >= self.length - 0.0001:
             return True
         return False
+
+    def is_empty(self):
+        return self.current_beat == 0.0
 
     def change_note_duration(self, at, to):
         """Change the note duration at the given index to the given

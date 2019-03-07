@@ -65,7 +65,7 @@ class MidiFile:
         (header, track_data) = self.parse_midi_file(file)
         c = Composition()
         if header[2]['fps']:
-            print "Don't know how to parse this yet"
+            print("Don't know how to parse this yet")
             return c
         ticks_per_beat = header[2]['ticks_per_beat']
         for track in track_data:
@@ -135,7 +135,7 @@ class MidiFile:
                         # Set tempo warning Only the last change in bpm will get
                         # saved currently
                         mpqn = self.bytes_to_int(event['data'])
-                        bpm = 60000000 / mpqn
+                        self.bpm = 60000000 / mpqn
                     elif event['meta_event'] == 88:
                         # Time Signature
                         d = event['data']
@@ -161,19 +161,19 @@ class MidiFile:
                                 key = intervals.major_fifth(key)
                         b.key = Note(key)
                     else:
-                        print 'Unsupported META event', event['meta_event']
+                        print('Unsupported META event ', event['meta_event'])
                 else:
-                    print 'Unsupported MIDI event', event
+                    print('Unsupported MIDI event ', event)
             t + b
             c.tracks.append(t)
-        return (c, bpm)
+        return (c, self.bpm)
 
     def parse_midi_file_header(self, fp):
         """Read the header of a MIDI file and return a tuple containing the
         format type, number of tracks and parsed time division information."""
         # Check header
         try:
-            if fp.read(4) != 'MThd':
+            if fp.read(4) != b'MThd':
                 raise HeaderError('Not a valid MIDI file header. Byte %d.'
                         % self.bytes_read)
             self.bytes_read += 4
@@ -210,7 +210,7 @@ class MidiFile:
         chunk_size -= 6
         if chunk_size % 2 == 1:
             raise FormatError("Won't parse this.")
-        fp.read(chunk_size / 2)
+        fp.read(int(chunk_size / 2) )
         self.bytes_read += chunk_size / 2
         return (format_type, number_of_tracks, time_division)
 
@@ -233,9 +233,9 @@ class MidiFile:
         else:
             SMPTE_frames = (value & 0x7F00) >> 2
             if SMPTE_frames not in [24, 25, 29, 30]:
-                raise TimeDivisionError, \
+                raise TimeDivisionError( \
                     "'%d' is not a valid value for the number of SMPTE frames"\
-                     % SMPTE_frames
+                     % SMPTE_frames)
             clock_ticks = (value & 0x00FF) >> 2
             return {'fps': True, 'SMPTE_frames': SMPTE_frames,
                     'clock_ticks': clock_ticks}
@@ -255,7 +255,7 @@ class MidiFile:
             chunk_size -= chunk_delta
             events.append([delta_time, event])
         if chunk_size < 0:
-            print 'yikes.', self.bytes_read, chunk_size
+            print('yikes.', self.bytes_read, chunk_size)
         return events
 
     def parse_midi_event(self, fp):
@@ -328,7 +328,7 @@ class MidiFile:
         except:
             raise IOError("Couldn't read track header from file. Byte %d."
                     % self.bytes_read)
-        if h != 'MTrk':
+        if h != b'MTrk':
             raise HeaderError('Not a valid Track header. Byte %d.'
                     % self.bytes_read)
 
@@ -349,7 +349,7 @@ class MidiFile:
         track data and the number of bytes read.
         """
         try:
-            f = open(file, 'r')
+            f = open(file, 'rb')
         except:
             raise IOError('File not found')
         self.bytes_read = 0
@@ -388,9 +388,9 @@ class MidiFile:
 
 if __name__ == '__main__':
     from sys import argv
-    import fluidsynth
-    import MidiFileOut
-    fluidsynth.init()
+    #import fluidsynth
+    import midi_file_out as MidiFileOut
+    #fluidsynth.init()
     (m, bpm) = MIDI_to_Composition(argv[1])
     MidiFileOut.write_Composition('test.mid', m, bpm)
 

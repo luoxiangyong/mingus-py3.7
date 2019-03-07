@@ -27,7 +27,7 @@ http://www.sonicspot.com/guide/midifiles.html
 from binascii import a2b_hex
 from struct import pack, unpack
 from math import log
-from midi_events import *
+from .midi_events import *
 from mingus.core.keys import Key, major_keys, minor_keys
 from mingus.containers.note import Note
 
@@ -36,20 +36,20 @@ class MidiTrack(object):
     """A class used to generate MIDI events from the objects in
     mingus.containers."""
 
-    track_data = ''
-    delta_time = '\x00'
+    track_data = b''
+    delta_time = b'\x00'
     delay = 0
     bpm = 120
     change_instrument = False
     instrument = 1
 
     def __init__(self, start_bpm=120):
-        self.track_data = ''
+        self.track_data = b''
         self.set_tempo(start_bpm)
 
     def end_of_track(self):
         """Return the bytes for an end of track meta event."""
-        return "\x00\xff\x2f\x00"
+        return b"\x00\xff\x2f\x00"
 
     def play_Note(self, note):
         """Convert a Note object to a midi event and adds it to the
@@ -72,7 +72,9 @@ class MidiTrack(object):
         if self.change_instrument:
             self.set_instrument(channel, self.instrument)
             self.change_instrument = False
+        print("*"*80,int(note))
         self.track_data += self.note_on(channel, int(note) + 12, velocity)
+        
 
     def play_NoteContainer(self, notecontainer):
         """Convert a mingus.containers.NoteContainer to the equivalent MIDI
@@ -161,27 +163,59 @@ class MidiTrack(object):
         call this function when you're done adding data (when you're not
         using get_midi_data).
         """
-        chunk_size = a2b_hex('%08x' % (len(self.track_data)
+        #SOLO:
+        #chunk_size = a2b_hex('%08x' % (len(self.track_data)
+        #                      + len(self.end_of_track())))
+        chunk_size = bytes.fromhex('%08x' % (len(self.track_data)
                               + len(self.end_of_track())))
-        return TRACK_HEADER + chunk_size
+
+        print("-"*80)
+        print("MidiTrack:header")
+        print("self.track_data:", self.track_data,len(self.track_data))
+        print("self.end_of_track():", self.end_of_track(),len(self.end_of_track()))
+        print("chunk_size value:",(len(self.track_data)
+                              + len(self.end_of_track())))
+        print("chunk_size byte:",chunk_size)
+        print("-"*80)
+
+        return TRACK_HEADER.encode() + chunk_size
 
     def get_midi_data(self):
         """Return the MIDI data in bytes for this track.
 
         Include header, track_data and the end of track meta event.
         """
+
+        print("-"*80)
+        print("MidiTrack:get_midi_data")
+        print(self.header(), len(self.header()))
+        print(self.track_data,len(self.track_data))
+        print(self.end_of_track())
+        print("-"*80)
+        
         return self.header() + self.track_data + self.end_of_track()
 
     def midi_event(self, event_type, channel, param1, param2=None):
         """Convert and return the paraters as a MIDI event in bytes."""
         assert event_type < 0x80 and event_type >= 0
         assert channel < 16 and channel >= 0
-        tc = a2b_hex('%x%x' % (event_type, channel))
+        #SOLO: tc = a2b_hex('%x%x' % (event_type, channel))
+        tc = bytes.fromhex('%x%x' % (event_type, channel))
         if param2 is None:
-            params = a2b_hex('%02x' % param1)
+            #SOLO: params = a2b_hex('%02x' % param1)
+            params = bytes.fromhex('%02x' % param1)
         else:
-            params = a2b_hex('%02x%02x' % (param1, param2))
-        return self.delta_time + tc + params
+            #SOLO: params = a2b_hex('%02x%02x' % (param1, param2))
+            params = bytes.fromhex('%02x%02x' % (param1, param2))
+        #print("-------------",type(self.delta_time),type(tc),type(params)) 
+
+        my_delta_time=b''
+        if type(self.delta_time).__name__ == 'str':
+             my_delta_time = self.delta_time.encode()
+        else:
+            my_delta_time = self.delta_time
+
+        return my_delta_time + tc + params
 
     def note_off(self, channel, note, velocity):
         """Return bytes for a 'note off' event."""
@@ -189,7 +223,9 @@ class MidiTrack(object):
 
     def note_on(self, channel, note, velocity):
         """Return bytes for a 'note_on' event."""
-        return self.midi_event(NOTE_ON, channel, note, velocity)
+        res = self.midi_event(NOTE_ON, channel, note, velocity)
+        print("midi_track:note_on", res)
+        return res
 
     def controller_event(self, channel, contr_nr, contr_val):
         """Return the bytes for a MIDI controller event."""
@@ -197,16 +233,19 @@ class MidiTrack(object):
 
     def reset(self):
         """Reset track_data and delta_time."""
-        self.track_data = ''
-        self.delta_time = '\x00'
+        self.track_data = b''
+        self.delta_time = b'\x00'
 
     def set_deltatime(self, delta_time):
         """Set the delta_time.
 
         Can be an integer or a variable length byte.
         """
+        if type(delta_time) == str:
+            delta_time = delta_time.encode()
         if type(delta_time) == int:
             delta_time = self.int_to_varbyte(delta_time)
+        print("---set_deltatime", delta_time)   
         self.delta_time = delta_time
 
     def select_bank(self, channel, bank):
@@ -225,8 +264,21 @@ class MidiTrack(object):
     def set_tempo_event(self, bpm):
         """Calculate the microseconds per quarter note."""
         ms_per_min = 60000000
-        mpqn = a2b_hex('%06x' % (ms_per_min / bpm))
-        return self.delta_time + META_EVENT + SET_TEMPO + '\x03' + mpqn
+        ###:solo_lxy modified
+        #SOLO:mpqn = a2b_hex('%06x' % (ms_per_min // bpm))
+        mpqn = bytes.fromhex('%06x' % (ms_per_min // bpm))
+        #print("____________ms_per_min / bpm = %d/%d = %d" % (ms_per_min , bpm, ms_per_min //bpm ))
+        #print(mpqn)
+        print("+"*80)
+        print("MidiTrack:set_tempo_event")
+        print("self.delta_time:",self.delta_time)
+        print("META_EVENT:",META_EVENT)
+        print("SET_TEMPO:",SET_TEMPO)
+        print("mpqn:",mpqn)
+        print(self.delta_time + META_EVENT + SET_TEMPO + b'\x03' + mpqn)
+        print("+"*80)
+
+        return self.delta_time + META_EVENT + SET_TEMPO + b'\x03' + mpqn
 
     def set_meter(self, meter=(4, 4)):
         """Add a time signature event for meter to track_data."""
@@ -234,10 +286,17 @@ class MidiTrack(object):
 
     def time_signature_event(self, meter=(4, 4)):
         """Return a time signature event for meter."""
-        numer = a2b_hex('%02x' % meter[0])
-        denom = a2b_hex('%02x' % int(log(meter[1], 2)))
-        return self.delta_time + META_EVENT + TIME_SIGNATURE + '\x04' + numer\
-             + denom + '\x18\x08'
+
+        #SOLO:
+        #numer = a2b_hex('%02x' % meter[0])
+        #denom = a2b_hex('%02x' % int(log(meter[1], 2)))
+        #return self.delta_time + META_EVENT + TIME_SIGNATURE + '\x04' + numer\
+        #     + denom + '\x18\x08'
+
+        numer = bytes.fromhex('%02x' % meter[0])
+        denom = bytes.fromhex('%02x' % int(log(meter[1], 2)))
+        return self.delta_time + META_EVENT + TIME_SIGNATURE + b'\x04' + numer\
+             + denom + b'\x18\x08'
 
     def set_key(self, key='C'):
         """Add a key signature event to the track_data."""
@@ -249,15 +308,20 @@ class MidiTrack(object):
         """Return the bytes for a key signature event."""
         if key.islower():
             val = minor_keys.index(key) - 7
-            mode = '\x01'
+            mode = b'\x01'
         else:
             val = major_keys.index(key) - 7
-            mode = '\x00'
+            mode = b'\x00'
         if val < 0:
             val = 256 + val
-        key = a2b_hex('%02x' % val)
-        return '{0}{1}{2}\x02{3}{4}'.format(self.delta_time, META_EVENT,
-                KEY_SIGNATURE, key, mode)
+        
+        #SOLO:
+        #key = a2b_hex('%02x' % val)
+        #return '{0}{1}{2}\x02{3}{4}'.format(self.delta_time, META_EVENT,
+        #        KEY_SIGNATURE, key, mode)
+        key = bytes.fromhex('%02x' % val)
+        return self.delta_time + META_EVENT + KEY_SIGNATURE \
+                + key + mode
 
     def set_track_name(self, name):
         """Add a meta event for the track."""
@@ -266,7 +330,7 @@ class MidiTrack(object):
     def track_name_event(self, name):
         """Return the bytes for a track name meta event."""
         l = self.int_to_varbyte(len(name))
-        return '\x00' + META_EVENT + TRACK_NAME + l + name
+        return b'\x00' + META_EVENT + TRACK_NAME + l + name.encode()
 
     def int_to_varbyte(self, value):
         """Convert an integer into a variable length byte.
@@ -280,11 +344,11 @@ class MidiTrack(object):
         length = int(log(max(value, 1), 0x80)) + 1
 
         # Remove the highest bit and move the bits to the right if length > 1
-        bytes = [value >> i * 7 & 0x7F for i in range(length)]
-        bytes.reverse()
+        my_bytes = [value >> i * 7 & 0x7F for i in range(length)]
+        my_bytes.reverse()
 
         # Set the first bit on every one but the last bit.
-        for i in range(len(bytes) - 1):
-            bytes[i] = bytes[i] | 0x80
-        return pack('%sB' % len(bytes), *bytes)
+        for i in range(len(my_bytes) - 1):
+            my_bytes[i] = my_bytes[i] | 0x80
+        return pack('%sB' % len(my_bytes), *my_bytes)
 

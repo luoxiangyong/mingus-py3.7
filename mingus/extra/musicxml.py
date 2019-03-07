@@ -313,7 +313,7 @@ def write_Composition(composition, filename, zip=False):
         zf = zipfile.ZipFile(filename + '.mxl', mode='w',
                              compression=zipfile.ZIP_DEFLATED)
         zi = zipfile.ZipInfo('META-INF' + os.sep + 'container.xml')
-        zi.external_attr = 0660 << 16L
+        zi.external_attr = 0o660 << 16
         zf.writestr(zi,
                     "<?xml version='1.0' encoding='UTF-8'?>"
                     "<container><rootfiles><rootfile full-path='{0}.xml'/>"

@@ -29,9 +29,10 @@ This module provides methods which can convert progressions to chords and
 vice versa.
 """
 
-import notes
-import chords
-import intervals
+from . import notes
+from . import chords
+from . import intervals
+
 numerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII']
 numeral_intervals = [0, 2, 4, 5, 7, 9, 11]
 
